@@ -4,7 +4,16 @@ import TemperatureWarmIcon from './temperature-warm.jsx';
 import HumidityIcon from './humidity.jsx';
 
 function App() {
-	const [currentTime, setCurrentTime] = useState(0);
+	const [temp, setTemp] = useState(0);
+    const [humi, setHumi] = useState(0);
+
+	useEffect(() => {
+	    fetch('/data').then(res => res.json()).then(data => {
+            setTemp(data.temp);
+            setHumi(data.humi);
+        });
+    }, []);
+
     return (
     <div className="content">
         <header className="App-header">
@@ -17,11 +26,11 @@ function App() {
             <div class="rcorners rcorner-0 tile-wrapper">
                 <div class="tile-row">
                     <TemperatureWarmIcon className="icon"/>
-                    <span>16°C</span>
+                    <span>{temp}°C</span>
                 </div>
                 <div class="tile-row">
                     <HumidityIcon className="icon" fill="#2980B9"/>
-                    <span>45%</span>
+                    <span>{humi}%</span>
                 </div>
             </div>
             <div class="rcorners tile-text-row">

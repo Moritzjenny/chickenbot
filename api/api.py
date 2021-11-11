@@ -1,10 +1,15 @@
-import time
 from flask import Flask
 
 
 app = Flask(__name__)
 
 
-@app.route('/time')
-def get_current_time():
-	return {'time': time.time()}
+@app.route('/data')
+def get_temp_hum_data():
+	f = open("/home/moritzjenny/chickenBot/data/temp_hum/temp.txt", "r")
+	temp = f.readlines()[-1]
+	f.close()
+	f = open("/home/moritzjenny/chickenBot/data/temp_hum/hum.txt", "r")
+	hum = f.readlines()[-1]
+	f.close()
+	return {'temp': temp, 'humi': hum}
