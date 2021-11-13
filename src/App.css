@@ -120,12 +120,30 @@
 	padding: 20px 0;
 }
 
-.tile-keyword-row{
+.tile-keyword-row-green{
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	font-size: 34px;
 	color: green;
+	padding: 20px 0;
+}
+
+.tile-keyword-row-red{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 34px;
+	color: red;
+	padding: 20px 0;
+}
+
+.tile-keyword-row-orange{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 34px;
+	color: orange;
 	padding: 20px 0;
 }
 

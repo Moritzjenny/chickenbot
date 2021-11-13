@@ -19,7 +19,9 @@ function App() {
     const [eveningValue, onChangeEveningValue] = useState('19:00');
 
     const [doorState, setDoorState] = useState("opened");
-    const [imgName, setImgName] = useState("../../chickenBot/data/images/watermarked_Nov-12-2021_22:35:56.jpg");
+    const [doorHistoryInfo, setHistoryDoorInfo] = useState("opened");
+    const [doorDate, setDoorDate] = useState("00/00/2020 00:00");
+    const [imgName, setImgName] = useState("view.jpg");
 
 	useEffect(() => {
 	    fetch('/data').then(res => res.json()).then(data => {
@@ -27,6 +29,9 @@ function App() {
             setHumi(data.humi);
             onChangeMorningValue(data.morning);
             onChangeEveningValue(data.evening);
+            setHistoryDoorInfo(data.status);
+            setDoorDate(data.date);
+            setDoorState(data.status);
         });
     }, []);
 
@@ -55,6 +60,14 @@ function App() {
         });
     }, []);
 
+    useEffect(() => {
+        socket.on('updateDoorHistory', (resp) => {
+            setHistoryDoorInfo(resp.status);
+            setDoorDate(resp.date);
+            console.log("updateDoorHistory");
+        });
+    }, []);
+
 
 
     return (
@@ -76,13 +89,48 @@ function App() {
                     <span>{humi}%</span>
                 </div>
             </div>
-            <div className="rcorners tile-text-row">
-                <span>Zuletzt geöffnet</span>
-                <span>10.11.2021 08:23</span>
-            </div>
-            <div className="rcorners tile-keyword-row">
-                <span>OFFEN</span>
-            </div>
+
+                {
+                    doorHistoryInfo==="opened"&&(
+                        <div className="rcorners tile-text-row">
+                            <span>Zuletzt geöffnet</span>
+                            <span>{doorDate}</span>
+                        </div>
+                    )
+                }
+                {
+                    doorHistoryInfo==="closed"&&(
+                        <div className="rcorners tile-text-row">
+                            <span>Zuletzt geschlossen</span>
+                            <span>{doorDate}</span>
+                        </div>
+                    )
+                }
+
+            {
+
+                doorState==="closed"&&(
+                    <div className="rcorners tile-keyword-row-red">
+                        <span>GESCHLOSSEN</span>
+                    </div>
+                )
+            }
+            {
+                doorState==="opened"&&(
+                    <div className="rcorners tile-keyword-row-green">
+                        <span>OFFEN</span>
+                    </div>
+                )
+            }
+            {
+                doorState==="moving"&&(
+                    <div className="rcorners tile-keyword-row-orange">
+                        <span>IN BEWEGUNG</span>
+                    </div>
+                )
+            }
+
+
             <div className="rcorners rcorner-3">
                 <div className="tile-title">Kamera</div>
                 <img src={imgName} className="webcam" alt=""></img>

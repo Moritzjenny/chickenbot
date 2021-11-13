@@ -8,6 +8,7 @@ sys.path.append('/home/moritzjenny/chickenBot')
 import servo_controller
 import grove_button
 import camera_controller
+from datetime import datetime
 
 async def loop():
     while True:
@@ -98,16 +99,27 @@ def get_data():
 	temp = mysql_getter.get_newest_temp()
 	hum = mysql_getter.get_newest_humi()
 
+	status = mysql_getter.get_newest_door_status()
+
 	# get timetable
 	morning, evening = get_time_table()
 
-	return {'temp': temp, 'humi': hum, 'morning': morning, 'evening': evening}
+	return {'temp': temp, 'humi': hum, 'morning': morning, 'evening': evening, 'date' : str(status[0]), 'status': status[1]}
 
 
 @app.route('/triggerDoor')
 def triggerDoorFromClient():
 	servo_controller.turn()
 	return {}
+
+@app.route('/setTimer')
+def setTimer():
+	servo_controller.turn()
+	return {}
+
+def updateDoorHistory():
+	status = mysql_getter.get_newest_door_status()
+	socketio.emit('updateDoorHistory', {'date': str(status[0]), 'status': status[1]})
 
 
 @socketio.on('connect')
@@ -118,9 +130,11 @@ def connected():
 def disconnected():
 	print('Disconnected from client')
 
+
 def updateImage(name):
 	print('send new image name ...  ' + name)
 	socketio.emit('updateImage', {'data': name})
+
 
 def triggerDoorFromBackend():
 	print('triggering door from client ... ')
@@ -129,7 +143,10 @@ def triggerDoorFromBackend():
 
 def finishedTurn(message):
 	print('finished turning door from client ... ')
+	updateDoorHistory()
 	socketio.emit('finishedDoorResponse', {'data': message})
+
+
 
 
 
