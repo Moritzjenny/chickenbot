@@ -8,7 +8,10 @@ sys.path.append('/home/moritzjenny/chickenBot')
 import servo_controller
 import grove_button
 import camera_controller
+from apscheduler.schedulers.background import BackgroundScheduler
+import time
 from datetime import datetime
+
 
 async def loop():
     while True:
@@ -16,11 +19,40 @@ async def loop():
         updateImage(name)
         await asyncio.sleep(60)
 
+def openDoorFromSchedule():
+	status = mysql_getter.get_newest_door_status()
+	if (str(status[1]) == "closed"):
+		servo_controller.turn()
+
+def closeDoorFromSchedule():
+	status = mysql_getter.get_newest_door_status()
+	if (str(status[1]) == "opened"):
+		servo_controller.turn()
+
+def updateSchedulers():
+	global sched
+	dayDate = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+	with open("/home/moritzjenny/chickenBot/data/time_settings/timetable.json") as jsonFile:
+		t = json.load(jsonFile)
+		jsonFile.close()
+		morning = t["morning"]
+		evening = t["evening"]
+		if (morning is not None):
+			sched.add_job(openDoorFromSchedule, 'interval', start_date=dayDate + " " + morning + ":00", hours=24, id='0')
+		if (evening is not None):
+			sched.add_job(closeDoorFromSchedule, 'interval', start_date=dayDate + " " + evening + ":00", hours=24, id='1')
+
+
+
 
 
 
 app = Flask(__name__)
 socketio = SocketIO(app)
+
+sched = BackgroundScheduler(daemon=True, timezone='Europe/Berlin')
+updateSchedulers()
+sched.start()
 
 # Kickoff timer
 #asyncio.run(loop())
@@ -50,6 +82,7 @@ if __name__ == '__main__':
 
 
 
+
 def get_time_table():
     with open("/home/moritzjenny/chickenBot/data/time_settings/timetable.json") as jsonFile:
         t = json.load(jsonFile)
@@ -57,6 +90,16 @@ def get_time_table():
         morning = t["morning"]
         evening = t["evening"]
         return morning, evening
+
+def set_timne_table(morning, evening):
+	with open("/home/moritzjenny/chickenBot/data/time_settings/timetable.json") as jsonFile:
+		t = json.load(jsonFile)
+		jsonFile.close()
+		t["morning"] = morning
+		t["evening"] = evening
+		with open("/home/moritzjenny/chickenBot/data/time_settings/timetable.json", "w") as jsonFile:
+			json.dump(t, jsonFile)
+			jsonFile.close()
 
 def write_time_table_morning(newMorning):
     morning, evening = get_time_table()
@@ -146,6 +189,14 @@ def finishedTurn(message):
 	updateDoorHistory()
 	socketio.emit('finishedDoorResponse', {'data': message})
 
+@socketio.on("dateChange")
+def handleDateChange(dateChange):
+	set_timne_table(dateChange["morningValue"], dateChange["eveningValue"])
+	global sched
+	sched.remove_job('0')
+	sched.remove_job('1')
+	updateSchedulers()
+	return None
 
 
 

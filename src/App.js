@@ -39,6 +39,10 @@ function App() {
         fetch("/triggerDoor")
     };
 
+    const dateChange=()=>{
+        socket.emit("dateChange", {"eveningValue": eveningValue, "morningValue": morningValue});
+    };
+
     useEffect(() => {
         socket.on('triggerDoorResponse', (resp) => {
             setDoorState("moving");
@@ -143,12 +147,14 @@ function App() {
                     <TimePicker
                         onChange={onChangeMorningValue}
                         value={morningValue}
+                        onClockClose={dateChange}
                     />
                     <div></div>
                     <span>Schliessung um</span>
                     <TimePicker
                         onChange={onChangeEveningValue}
                         value={eveningValue}
+                        onClockClose={dateChange}
                     />
                     <div></div>
                     <div></div>
