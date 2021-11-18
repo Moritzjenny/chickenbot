@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from 'react';
-import { Button } from 'react-bootstrap-buttons';
+import {Line} from 'react-chartjs-2';
+import { Button, ButtonGroup } from 'react-bootstrap-buttons';
 import 'react-bootstrap-buttons/dist/react-bootstrap-buttons.css';
 import {ReactSpinner} from 'react-spinning-wheel';
 import 'react-spinning-wheel/dist/style.css';
@@ -7,9 +8,11 @@ import TimePicker from 'react-time-picker';
 import './App.css';
 import TemperatureWarmIcon from './temperature-warm.jsx';
 import HumidityIcon from './humidity.jsx';
+import XIcon from './x.jsx';
 import {io} from 'socket.io-client';
 
 const socket = io();
+
 
 
 function App() {
@@ -23,8 +26,38 @@ function App() {
     const [doorDate, setDoorDate] = useState("00/00/2020 00:00");
     const [imgName, setImgName] = useState("view.jpg");
 
+    const [tempData, setTempData] = useState([0]);
+    const [humiData, setHumiData] = useState([0]);
+    const [labelsFromBackend, setLabelsFromBackend] = useState([0]);
+
+    const [displayChart, setDisplayChart] = useState(false);
+
+
+    const data = {
+        labels: labelsFromBackend,
+        datasets: [
+            {
+                label: "Temperatur",
+                data: tempData,
+                fill: true,
+                backgroundColor: "rgba(75,192,192,0.2)",
+                borderColor: "rgba(75,192,192,1)",
+                lineTension:0.5
+            },
+            {
+                label: "Feuchtigkeit",
+                data: humiData,
+                fill: false,
+                borderColor: "#742774",
+                lineTension:0.5
+            }
+        ],
+    };
+
+
+
 	useEffect(() => {
-	    fetch('/data').then(res => res.json()).then(data => {
+	    fetch('/api/data').then(res => res.json()).then(data => {
             setTemp(data.temp);
             setHumi(data.humi);
             onChangeMorningValue(data.morning);
@@ -32,11 +65,38 @@ function App() {
             setHistoryDoorInfo(data.status);
             setDoorDate(data.date);
             setDoorState(data.status);
+            setImgName(data.imageName);
         });
+        fetch('/api/getDayData').then(res => res.json()).then(data => {
+            setTempData(data.temp);
+            setHumiData(data.humi);
+            setLabelsFromBackend(data.labels);
+        });
+
     }, []);
 
+    const getWeekData=()=>{
+        fetch('/api/getWeekData').then(res => res.json()).then(data => {
+            setTempData(data.temp);
+            setHumiData(data.humi);
+            setLabelsFromBackend(data.labels);
+        });
+    };
+
+    const getDayData=()=>{
+        fetch('/api/getDayData').then(res => res.json()).then(data => {
+            setTempData(data.temp);
+            setHumiData(data.humi);
+            setLabelsFromBackend(data.labels);
+        });
+    };
+
     const triggerDoor=()=>{
-        fetch("/triggerDoor")
+        fetch("/api/triggerDoor")
+    };
+
+    const triggerDisplayData=()=>{
+        setDisplayChart(!displayChart);
     };
 
     const dateChange=()=>{
@@ -59,8 +119,8 @@ function App() {
 
     useEffect(() => {
         socket.on('updateImage', (resp) => {
-            alert(resp.data);
             console.log("updateImage");
+            setImgName(resp.data);
         });
     }, []);
 
@@ -71,6 +131,8 @@ function App() {
             console.log("updateDoorHistory");
         });
     }, []);
+
+
 
 
 
@@ -85,11 +147,11 @@ function App() {
         <div className="grid">
             <div className="rcorners rcorner-0 tile-wrapper">
                 <div className="tile-row">
-                    <TemperatureWarmIcon className="icon"/>
+                    <TemperatureWarmIcon className="icon" onClick={() => triggerDisplayData()}/>
                     <span>{temp}°C</span>
                 </div>
                 <div className="tile-row">
-                    <HumidityIcon className="icon" fill="#2980B9"/>
+                    <HumidityIcon className="icon" fill="#2980B9" onClick={() => triggerDisplayData()}/>
                     <span>{humi}%</span>
                 </div>
             </div>
@@ -133,11 +195,25 @@ function App() {
                     </div>
                 )
             }
+            {
+                displayChart===true&&(
+                    <div className="rcorners rcorner-chart">
+                        <div className="tile-title">Diagramm<Button xs btnStyle="default" className="x-button-container" onClick={triggerDisplayData}><XIcon className="x-button"/></Button></div>
+                        <div className="button-container ">
+                            <ButtonGroup>
+                                <Button btnStyle="default" onClick={getDayData}>Tag</Button>
+                                <Button btnStyle="default" onClick={getWeekData}>Woche</Button>
 
+                            </ButtonGroup>
+                        </div>
+                        <Line className='webcam' data={data}/>
+                    </div>
+                )
+            }
 
             <div className="rcorners rcorner-3">
                 <div className="tile-title">Kamera</div>
-                <img src={imgName} className="webcam" alt=""></img>
+                <img src={imgName} className="webcam" alt="" ></img>
             </div>
             <div className="rcorners">
                 <div className="tile-title">Steuerung</div>
@@ -179,6 +255,7 @@ function App() {
                 </div>
 
             </div>
+
         </div>
     </div>
   );

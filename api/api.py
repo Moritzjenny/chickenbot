@@ -5,19 +5,47 @@ import mysql_getter
 import sys
 from flask_socketio import SocketIO
 sys.path.append('/home/moritzjenny/chickenBot')
-import servo_controller
 import grove_button
+import servo_controller
 import camera_controller
 from apscheduler.schedulers.background import BackgroundScheduler
 import time
 from datetime import datetime
+import configparser
+import grove_led
 
 
-async def loop():
-    while True:
-        name = camera_controller.take_still()
-        updateImage(name)
-        await asyncio.sleep(60)
+# Load config
+config = configparser.ConfigParser()
+config.read('/home/moritzjenny/chickenBot.config')
+
+imageInterval = int(config['camera']['imageInterval'])
+
+# Button
+pin = 16
+button = grove_button.GroveButton(pin)
+
+def check_chickenBot_status():
+	#TODO: check everything.
+	# If everything is ok -> then blink
+	grove_led.set_to_true()
+
+def on_press(t):
+	print('Button is pressed')
+	servo_controller.turn()
+
+def on_release(t):
+	print("Button is released, pressed for {0} seconds".format(round(t, 6)))
+
+
+button.on_press = on_press
+button.on_release = on_release
+
+
+def takeStill():
+	name = camera_controller.take_still()
+	print('send new image name ...  ' + name)
+	socketio.emit('updateImage', {'data': name})
 
 def openDoorFromSchedule():
 	status = mysql_getter.get_newest_door_status()
@@ -43,44 +71,44 @@ def updateSchedulers():
 			sched.add_job(closeDoorFromSchedule, 'interval', start_date=dayDate + " " + evening + ":00", hours=24, id='1')
 
 
-
-
-
-
-app = Flask(__name__)
+app = Flask(__name__, static_folder="../build", static_url_path="/")
 socketio = SocketIO(app)
+
+print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n"
+	  "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n"
+	  "%%%%%%%%%%%%%%%%%%%%%%%% Welcome to the %%%%%%%%%%%%%%%%%%%%%%%%%%\n"
+	  "   _____ _    _ _____ _____ _  ________ _   _ ____   ____ _______ \n"
+	  "  / ____| |  | |_   _/ ____| |/ /  ____| \ | |  _ \ / __ \__   __|\n"
+	  " | |    | |__| | | || |    | ' /| |__  |  \| | |_) | |  | | | | \n"
+	  " | |    |  __  | | || |    |  < |  __| | . ` |  _ <| |  | | | | \n"
+	  " | |____| |  | |_| || |____| . \| |____| |\  | |_) | |__| | | | \n"
+	  "  \_____|_|  |_|_____\_____|_|\_\______|_| \_|____/ \____/  |_| \n"
+	  "                                                                  \n"
+	  "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n"
+	  "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n"
+	  "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
 sched = BackgroundScheduler(daemon=True, timezone='Europe/Berlin')
 updateSchedulers()
 sched.start()
 
-# Kickoff timer
-#asyncio.run(loop())
-# name = camera_controller.take_still()
-# updateImage(name)
+# Check Status of chickenBot
+check_chickenBot_status()
+
+# Kickoff camera timer
+nowDate = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+
+sched.add_job(takeStill, 'interval', start_date=nowDate, seconds=imageInterval, id='3')
 
 
-# Button
-pin = 16
-button = grove_button.GroveButton(pin)
-
-def on_press(t):
-	print('Button is pressed')
-	servo_controller.turn()
-
-def on_release(t):
-	print("Button is released, pressed for {0} seconds".format(round(t, 6)))
-
-button.on_press = on_press
-button.on_release = on_release
-
-socketio.run(app)
 
 if __name__ == '__main__':
 	socketio.run(app)
 
 
-
+@app.route('/')
+def index():
+		return app.send_static_file('index.html')
 
 
 def get_time_table():
@@ -124,7 +152,7 @@ def write_time_table_evening(newEvening):
 		json.dump(json_data, jsonFile)
 		jsonFile.close()
 
-@app.route('/data')
+@app.route('/api/data')
 def get_data():
 
 	# get from file
@@ -144,21 +172,35 @@ def get_data():
 
 	status = mysql_getter.get_newest_door_status()
 
+	imageName = camera_controller.get_current_image_name()
+
 	# get timetable
 	morning, evening = get_time_table()
 
-	return {'temp': temp, 'humi': hum, 'morning': morning, 'evening': evening, 'date' : str(status[0]), 'status': status[1]}
+	return {'temp': temp, 'humi': hum, 'morning': morning, 'evening': evening, 'date' : str(status[0]), 'status': status[1], 'imageName': imageName}
 
 
-@app.route('/triggerDoor')
+@app.route('/api/triggerDoor')
 def triggerDoorFromClient():
+	print("triggered door")
 	servo_controller.turn()
 	return {}
 
-@app.route('/setTimer')
-def setTimer():
-	servo_controller.turn()
-	return {}
+@app.route('/api/getWeekData')
+def getWeekData():
+	print("requested week data")
+	temp = mysql_getter.get_values_for_the_last_week("temperature")
+	humi = mysql_getter.get_values_for_the_last_week("humidity")
+	labels = mysql_getter.get_labels_for_the_last_week()
+	return {'temp': temp, 'humi': humi, 'labels': labels}
+
+@app.route('/api/getDayData')
+def getDayData():
+	print("requested day data")
+	temp = mysql_getter.get_values_for_the_last_day("temperature")
+	humi = mysql_getter.get_values_for_the_last_day("humidity")
+	labels = mysql_getter.get_labels_for_the_last_day()
+	return {'temp': temp, 'humi': humi, 'labels': labels}
 
 def updateDoorHistory():
 	status = mysql_getter.get_newest_door_status()
@@ -174,10 +216,6 @@ def disconnected():
 	print('Disconnected from client')
 
 
-def updateImage(name):
-	print('send new image name ...  ' + name)
-	socketio.emit('updateImage', {'data': name})
-
 
 def triggerDoorFromBackend():
 	print('triggering door from client ... ')
@@ -191,12 +229,15 @@ def finishedTurn(message):
 
 @socketio.on("dateChange")
 def handleDateChange(dateChange):
+	print("change date ...")
 	set_timne_table(dateChange["morningValue"], dateChange["eveningValue"])
 	global sched
 	sched.remove_job('0')
 	sched.remove_job('1')
 	updateSchedulers()
 	return None
+
+
 
 
 

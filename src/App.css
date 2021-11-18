@@ -64,6 +64,17 @@
 
 }
 
+.x-button-container{
+	float: right;
+
+}
+
+.x-button{
+	height: 20px;
+	width: 20px;
+
+}
+
 .App-header {	
  	color: black;
 	font-family: amatic;
@@ -76,6 +87,12 @@
 .webcam{
 	width: 100%;
 	padding: 20px;
+}
+
+.button-container{
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 
@@ -163,10 +180,16 @@
 	grid-row-start: 1;
 }
 
+.rcorner-chart {
+	grid-column-start: 1;
+	grid-column-end: 4;
+	grid-row-start: 2;
+	gap: 20px;
+}
+
 .rcorner-3 {
 	grid-column-start: 1;
 	grid-column-end: 3;
-	grid-row-start: 2;
 }
 
 
