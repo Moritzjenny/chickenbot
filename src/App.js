@@ -39,19 +39,69 @@ function App() {
             {
                 label: "Temperatur",
                 data: tempData,
-                fill: true,
-                backgroundColor: "rgba(75,192,192,0.2)",
-                borderColor: "rgba(75,192,192,1)",
-                lineTension:0.5
+                fill: false,
+                borderColor: "#2980B9",
+                lineTension:0.5,
+                yAxisID: 'y',
             },
             {
                 label: "Feuchtigkeit",
                 data: humiData,
-                fill: false,
-                borderColor: "#742774",
-                lineTension:0.5
-            }
+                fill: true,
+                backgroundColor: "rgba(75,192,192,0.2)",
+                borderColor: "rgba(75,192,192,1)",
+                lineTension:0.5,
+                yAxisID: 'y1',
+            },
+
         ],
+    };
+
+    const config = {
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Temperatur'
+                    },
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        // Include a dollar sign in the ticks
+                        callback: function(value, index, values) {
+                            return value + 'C°';
+                        }
+                    },
+                    min: -30,
+                    max: 40,
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    unit: "C°"
+
+                },
+                y1: {
+                    title: {
+                        display: true,
+                        text: 'Feuchtigkeit'
+                    },
+                    ticks: {
+                        // Include a dollar sign in the ticks
+                        callback: function(value, index, values) {
+                            return value + '%';
+                        },
+
+                    },
+                    min: 0,
+                    max: 100,
+                    display: true,
+                    position: 'right',
+                },
+            }
+        },
     };
 
 
@@ -145,13 +195,13 @@ function App() {
             </div>
         </header>
         <div className="grid">
-            <div className="rcorners rcorner-0 tile-wrapper">
+            <div className="rcorners rcorner-0 tile-wrapper" onClick={() => triggerDisplayData()}>
                 <div className="tile-row">
-                    <TemperatureWarmIcon className="icon" onClick={() => triggerDisplayData()}/>
+                    <TemperatureWarmIcon className="icon"/>
                     <span>{temp}°C</span>
                 </div>
                 <div className="tile-row">
-                    <HumidityIcon className="icon" fill="#2980B9" onClick={() => triggerDisplayData()}/>
+                    <HumidityIcon className="icon" fill="#2980B9"/>
                     <span>{humi}%</span>
                 </div>
             </div>
@@ -206,7 +256,7 @@ function App() {
 
                             </ButtonGroup>
                         </div>
-                        <Line className='webcam' data={data}/>
+                        <Line className='webcam' data={data} options={config.options}/>
                     </div>
                 )
             }

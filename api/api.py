@@ -5,6 +5,7 @@ import mysql_getter
 import sys
 from flask_socketio import SocketIO
 sys.path.append('/home/moritzjenny/chickenBot')
+import grove_magnet
 import grove_button
 import servo_controller
 import camera_controller
@@ -13,7 +14,8 @@ import time
 from datetime import datetime
 import configparser
 import grove_led
-
+import requests
+from threading import Thread
 
 # Load config
 config = configparser.ConfigParser()
@@ -21,25 +23,35 @@ config.read('/home/moritzjenny/chickenBot.config')
 
 imageInterval = int(config['camera']['imageInterval'])
 
-# Button
-pin = 16
-button = grove_button.GroveButton(pin)
+ticksTurned = 0
+
+
 
 def check_chickenBot_status():
 	#TODO: check everything.
 	# If everything is ok -> then blink
-	grove_led.set_to_true()
+	check = True
 
-def on_press(t):
-	print('Button is pressed')
-	servo_controller.turn()
+	#check db
+	if (mysql_getter.check_data_base()):
+		pass
+	else:
+		check = False
+		print("%%%ERROR%%% - could not interact with database")
 
-def on_release(t):
-	print("Button is released, pressed for {0} seconds".format(round(t, 6)))
+	#check internet
+	url = "http://www.cloudflare.com"
+	timeout = 5
+	try:
+		request = requests.get(url, timeout=timeout)
 
+	except (requests.ConnectionError, requests.Timeout) as exception:
+		print("%%%ERROR%%% - no internet connection")
+		check = False
 
-button.on_press = on_press
-button.on_release = on_release
+	if (check):
+		grove_led.set_to_true()
+		sched.remove_job('4')
 
 
 def takeStill():
@@ -72,7 +84,10 @@ def updateSchedulers():
 
 
 app = Flask(__name__, static_folder="../build", static_url_path="/")
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins=['https://chickenbot.ch', 'http://localhost:5000',  'http://192.168.1.115'])
+
+if __name__ == '__main__':
+	socketio.run(app)
 
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n"
 	  "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n"
@@ -92,18 +107,19 @@ sched = BackgroundScheduler(daemon=True, timezone='Europe/Berlin')
 updateSchedulers()
 sched.start()
 
-# Check Status of chickenBot
-check_chickenBot_status()
+
 
 # Kickoff camera timer
 nowDate = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
 
 sched.add_job(takeStill, 'interval', start_date=nowDate, seconds=imageInterval, id='3')
 
+# Check Status of chickenBot
+sched.add_job(check_chickenBot_status, 'interval', start_date=nowDate, seconds=15, id='4')
 
 
-if __name__ == '__main__':
-	socketio.run(app)
+
+
 
 
 @app.route('/')
@@ -236,6 +252,23 @@ def handleDateChange(dateChange):
 	sched.remove_job('1')
 	updateSchedulers()
 	return None
+
+# Magnet
+
+"""
+def on_trigger():
+	global ticksTurned
+	print('Magnet ON')
+	ticksTurned += 1
+	print(ticksTurned)
+def on_trigger_release():
+	print("Magnet OFF")
+
+grove_magnet.switch.on_trigger = on_trigger
+grove_magnet.switch.on_release = on_trigger_release
+
+"""
+
 
 
 

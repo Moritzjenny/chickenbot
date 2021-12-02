@@ -66,13 +66,14 @@
 
 .x-button-container{
 	float: right;
-
 }
 
 .x-button{
-	height: 20px;
-	width: 20px;
-
+	display: flex;
+	height: 18%;
+	width: 16px;
+	vertical-align: middle;	
+	
 }
 
 .App-header {	
@@ -113,6 +114,7 @@
 .icon {
 	height: 40px;
 	width: 40px;
+
 }
 
 .tile-wrapper{
@@ -178,6 +180,7 @@
 .rcorner-0 {
 	grid-column-start: 1;
 	grid-row-start: 1;
+	cursor: pointer;
 }
 
 .rcorner-chart {
