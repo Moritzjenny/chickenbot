@@ -113,6 +113,7 @@ sched.start()
 nowDate = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
 
 sched.add_job(takeStill, 'interval', start_date=nowDate, seconds=imageInterval, id='3')
+takeStill()
 
 # Check Status of chickenBot
 sched.add_job(check_chickenBot_status, 'interval', start_date=nowDate, seconds=15, id='4')

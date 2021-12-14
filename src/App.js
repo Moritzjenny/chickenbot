@@ -43,6 +43,7 @@ function App() {
                 borderColor: "#2980B9",
                 lineTension:0.5,
                 yAxisID: 'y',
+                pointHitRadius: 20,
             },
             {
                 label: "Feuchtigkeit",
@@ -52,6 +53,7 @@ function App() {
                 borderColor: "rgba(75,192,192,1)",
                 lineTension:0.5,
                 yAxisID: 'y1',
+                pointHitRadius: 20,
             },
 
         ],
@@ -75,8 +77,6 @@ function App() {
                             return value + 'C°';
                         }
                     },
-                    min: -30,
-                    max: 40,
                     type: 'linear',
                     display: true,
                     position: 'left',
@@ -95,8 +95,6 @@ function App() {
                         },
 
                     },
-                    min: 0,
-                    max: 100,
                     display: true,
                     position: 'right',
                 },
@@ -304,9 +302,14 @@ function App() {
                     }
                 </div>
 
+
             </div>
 
+            <footer className="footer">
+                ©2022, chickenbot.ch, Zuoz
+            </footer>
         </div>
+
     </div>
   );
 }

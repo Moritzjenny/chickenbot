@@ -66,6 +66,7 @@
 
 .x-button-container{
 	float: right;
+	border: 0;
 }
 
 .x-button{
@@ -176,7 +177,6 @@
 }
 
 
-
 .rcorner-0 {
 	grid-column-start: 1;
 	grid-row-start: 1;
@@ -194,6 +194,8 @@
 	grid-column-start: 1;
 	grid-column-end: 3;
 }
+
+
 
 
 
@@ -219,6 +221,14 @@
 	justify-content: center;
 	height: 100%;
 	gap: 20px;
+}
+
+.footer{	
+	grid-column-start: 1;
+	grid-column-end: 5;
+	width: 100%;
+	text-align: center;
+	font-size: 14px;	
 }
 
 
