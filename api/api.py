@@ -1,4 +1,5 @@
 from flask import Flask
+from flask import request
 import asyncio
 import json
 import mysql_getter
@@ -16,6 +17,7 @@ import configparser
 import grove_led
 import requests
 from threading import Thread
+import userManager
 
 # Load config
 config = configparser.ConfigParser()
@@ -195,6 +197,14 @@ def get_data():
 	morning, evening = get_time_table()
 
 	return {'temp': temp, 'humi': hum, 'morning': morning, 'evening': evening, 'date' : str(status[0]), 'status': status[1], 'imageName': imageName}
+
+@app.route('/api/authenticate')
+def authenticate():
+	password = request.args.get('password')
+	auth = userManager.authorize(password)
+	print(auth)
+	return {'auth' : auth}
+
 
 
 @app.route('/api/triggerDoor')
